@@ -19,16 +19,16 @@ sem LLM (parser por regras).
 |---|---|---|
 | 1 | Estrutura Next.js + TypeScript + Tailwind | feita |
 | 2 | Integração Google Sheets (`FinanceRepository`) | feita e **testada contra a planilha real** |
-| 3 | Bot Telegram + webhook | feita (webhook ainda **não registrado**) |
+| 3 | Bot Telegram + webhook | feita e registrada |
 | 4 | Parser determinístico | feita |
-| 5 | Confirmação por botões + gravação + idempotência | feita (testada só com Sheets falso e no ciclo real do repositório; **falta teste no Telegram**) |
+| 5 | Confirmação por botões + gravação + idempotência | feita e testada no Telegram |
 | 6 | Edição e exclusão (`/editar`, `/excluir`, `/ultimos`, botão Editar, log na aba `logs`) | feita e testada no Telegram |
-| 7 | Autenticação do site (login, senha com hash, `AUTH_SECRET`) | feita e testada localmente; **falta configurar as variáveis na Vercel e testar lá** (após editar `.env.local`, reinicie o `npm run dev`) |
+| 7 | Autenticação do site (login, senha com hash, `AUTH_SECRET`) | feita e testada localmente; Vercel configurada (ver `docs/autenticacao.md`; após editar `.env.local`, reinicie o `npm run dev`) |
 | 8 | Dashboard (resumo, gráficos, filtros, tabela de lançamentos) | feita e testada localmente com a planilha real (somente leitura) |
-| 9 | Orçamento 50/30/20 configurável + "quanto ainda posso gastar" | feita (config na aba `configuracoes`, ver `docs/google-sheets.md`; **falta testar no deploy**) |
-| 10 | Testes | parcial (177 testes passando) |
-| 11 | Deploy na Vercel | **em andamento (próximo passo imediato)** |
-| 12 | Documentação | parcial |
+| 9 | Orçamento 50/30/20 configurável + "quanto ainda posso gastar" | feita (config na aba `configuracoes`, ver `docs/google-sheets.md`) |
+| 10 | Testes | feita (194 testes: parser, fluxo do Telegram, repositório, auth/middleware, webhook, dashboard, orçamento) |
+| 11 | Deploy na Vercel | feita (login, webhook e fluxo no grupo verificados) |
+| 12 | Documentação | feita (`README.md` e `docs/`) |
 
 Pós-MVP (não feitos): parcelamento (`10x`), despesas recorrentes, metas,
 consultas em linguagem natural (`quanto gastei…`), `/saldo`, `/mes`,
@@ -101,17 +101,14 @@ Planilha com 7 abas e cabeçalhos exatos descritos em `docs/google-sheets.md`
 
 ## Próximos passos, em ordem
 
-1. **Deploy na Vercel** (Fase 11 antecipada): importar o repositório, cadastrar
-   as variáveis acima em Settings → Environment Variables (a chave privada em
-   uma linha com `\n` literais), fazer o deploy.
-2. **Registrar o webhook** do Telegram apontando para
-   `https://<app>.vercel.app/api/telegram/webhook` com `secret_token` igual a
-   `TELEGRAM_WEBHOOK_SECRET` (comando em `docs/telegram.md`).
-3. **Testar no grupo:** `padaria 54,90` → Confirmar → conferir a linha em
-   `despesas`; testar `pix joao 200`, `almoço 35 ontem`, clique duplo.
-4. **Autorizar a esposa** (adicionar o ID em `AUTHORIZED_TELEGRAM_USERS` na
-   Vercel e redeploy).
-5. Configurar login na Vercel (`AUTH_SECRET`, `ADMIN_USERNAME`, `ADMIN_PASSWORD_HASH`), depois Fases 8, 9 e fechar testes/documentação.
+As 12 fases do MVP estão concluídas e o deploy está no ar. Pendências e ideias:
+
+1. Conferir o painel de orçamento no deploy e, se quiser, preencher a aba
+   `configuracoes` (chaves em `docs/google-sheets.md`).
+2. Apagar as colunas extras da aba `logs` (a partir da F).
+3. Pós-MVP, por ordem sugerida: `/saldo` e `/mes`, criar/editar/excluir pelo
+   site, despesas recorrentes, parcelamento (`10x`), metas, consultas em
+   linguagem natural, modo escuro.
 
 ## Limitações conhecidas
 
