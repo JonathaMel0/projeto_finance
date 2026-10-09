@@ -9,7 +9,7 @@ import type {
 export const MSG_NAO_AUTORIZADO =
   "Você não possui autorização para utilizar este bot.";
 export const MSG_ERRO_GENERICO =
-  "Não consegui salvar seu lançamento agora. Tente novamente em alguns instantes.";
+  "Não consegui concluir isso agora. Tente novamente em alguns instantes.";
 
 const MSG_AJUDA = [
   "Envie um lançamento e confirme nos botões:",
@@ -20,6 +20,9 @@ const MSG_AJUDA = [
   "uber 27,50 pix",
   "",
   "Comandos:",
+  "/ultimos - últimos lançamentos",
+  "/editar - editar um lançamento (ex.: editar 1 valor 59,90)",
+  "/excluir - excluir um lançamento",
   "/start - apresentação",
   "/ajuda - esta mensagem",
 ].join("\n");
@@ -29,6 +32,12 @@ export interface HandlerDeps {
   authorizedUserIds: string[];
   /** Mensagens de texto livre (não comandos). */
   onText?: (message: TelegramMessage) => Promise<void>;
+  /** Comandos de lançamentos (/ultimos, /editar, /excluir). Devolve true se tratou. */
+  onCommand?: (
+    command: string,
+    args: string,
+    message: TelegramMessage,
+  ) => Promise<boolean>;
   /** Cliques em botões inline; é responsável por responder o callback. */
   onCallback?: (callback: TelegramCallbackQuery) => Promise<void>;
 }
@@ -79,6 +88,12 @@ export async function handleUpdate(
       await deps.client.sendMessage(chatId, MSG_AJUDA);
     } else if (command === null && deps.onText) {
       await deps.onText(message);
+    } else if (
+      command !== null &&
+      deps.onCommand &&
+      (await deps.onCommand(command, parseCommandArgs(text), message))
+    ) {
+      // tratado por onCommand
     } else {
       await deps.client.sendMessage(
         chatId,
@@ -89,6 +104,11 @@ export async function handleUpdate(
     console.error("[telegram] falha ao processar update", update.update_id, error);
     await deps.client.sendMessage(chatId, MSG_ERRO_GENERICO).catch(() => {});
   }
+}
+
+/** "/editar 1 valor 10" -> "1 valor 10" */
+export function parseCommandArgs(text: string): string {
+  return text.replace(/^\/\S*\s*/, "").trim();
 }
 
 /** "/ajuda@MeuBot arg" -> "ajuda"; texto sem barra inicial -> null. */

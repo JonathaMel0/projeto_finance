@@ -54,5 +54,25 @@ Para conferir: `https://api.telegram.org/bot<TOKEN>/getWebhookInfo`.
 - Falhas (ex.: Sheets fora do ar) não vazam detalhes: o usuário recebe "Não
   consegui salvar seu lançamento agora. Tente novamente em alguns instantes."
   e os botões continuam válidos para tentar de novo.
-- Ainda não existem: botão Editar, `/editar`, `/excluir`, `/ultimos`, `/saldo`
-  (Fase 6 em diante).
+- **Últimos lançamentos:** `/ultimos` (ou `ultimos`) lista os 5 mais recentes
+  (por ordem de registro), numerados.
+- **Editar um lançamento gravado:**
+  - `editar` → lista com botões numerados → escolha o campo (Descrição, Valor,
+    Categoria, Data) → envie o novo valor na próxima mensagem. A edição aberta
+    expira em 10 minutos e tem botão Cancelar; enquanto ela estiver aberta, a
+    próxima mensagem **do mesmo usuário no mesmo chat** é tratada como o novo
+    valor (não vira lançamento novo).
+  - Direto: `editar 2 valor 59,90`, `editar 1 categoria lazer`,
+    `editar 3 data ontem`. O número é a posição em `/ultimos`. Sem campo
+    (`editar 2`) mostra os botões de campo.
+  - Categoria precisa ser uma das categorias do tipo do lançamento.
+  - **Tipo** (despesa/entrada) não é editável: exclua e lance de novo.
+- **Excluir:** `excluir` (lista com botões) ou `excluir 2` → "Deseja realmente
+  excluir?" com Sim/Não. Só exclui no Sim; clique repetido não faz nada.
+- **Botão Editar** na confirmação do lançamento: altera descrição, valor,
+  categoria ou data **antes** de gravar; depois volta para a confirmação.
+- Os comandos funcionam com ou sem a barra (`editar 1 valor 10`).
+- **Log (aba `logs`):** `criacao`, `edicao` (campo, valor antigo e novo) e
+  `exclusao` (dados do lançamento), com o ID do usuário. Falha ao gravar o log
+  nunca desfaz a operação.
+- Ainda não existem: `/saldo`, `/mes` (fases seguintes).

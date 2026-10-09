@@ -22,11 +22,11 @@ sem LLM (parser por regras).
 | 3 | Bot Telegram + webhook | feita (webhook ainda **não registrado**) |
 | 4 | Parser determinístico | feita |
 | 5 | Confirmação por botões + gravação + idempotência | feita (testada só com Sheets falso e no ciclo real do repositório; **falta teste no Telegram**) |
-| 6 | Edição e exclusão (`/editar`, `/excluir`, `/ultimos`, botão Editar, log na aba `logs`) | **próxima** |
+| 6 | Edição e exclusão (`/editar`, `/excluir`, `/ultimos`, botão Editar, log na aba `logs`) | feita no código (138 testes); **falta testar no Telegram** |
 | 7 | Autenticação do site (login, senha com hash, `AUTH_SECRET`) | pendente |
 | 8 | Dashboard (resumo, gráficos, filtros, tabela de lançamentos) | pendente |
 | 9 | Orçamento 50/30/20 configurável + "quanto ainda posso gastar" | pendente |
-| 10 | Testes | parcial (115 testes passando; faltam os das fases 6+) |
+| 10 | Testes | parcial (138 testes passando; faltam os das fases 7+) |
 | 11 | Deploy na Vercel | **em andamento (próximo passo imediato)** |
 | 12 | Documentação | parcial |
 
@@ -107,14 +107,14 @@ Planilha com 7 abas e cabeçalhos exatos descritos em `docs/google-sheets.md`
    `despesas`; testar `pix joao 200`, `almoço 35 ontem`, clique duplo.
 4. **Autorizar a esposa** (adicionar o ID em `AUTHORIZED_TELEGRAM_USERS` na
    Vercel e redeploy).
-5. **Fase 6**, depois 7, 8, 9, e fechar testes/documentação.
+5. Testar a Fase 6 no Telegram (editar/excluir/botão Editar), depois Fases 7, 8, 9 e fechar testes/documentação.
 
 ## Limitações conhecidas
 
 - Deduplicação por `update_id` é em memória (por instância); a proteção
   forte contra duplicidade é o ID do pendente.
-- A aba `logs` ainda não é escrita (entra na Fase 6).
-- Botão **Editar** na confirmação ainda não existe.
+- A edição por mensagem de texto captura a próxima mensagem do usuário por até 10 min (há botão Cancelar).
+- O tipo (despesa/entrada) de um lançamento gravado não é editável.
 - O login do site será único (single-user), como no prompt.
 
 ## Estimativa de custo (se rodar o restante com Claude)

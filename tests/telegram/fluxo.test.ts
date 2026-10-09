@@ -85,7 +85,7 @@ describe("confirmação de lançamento", () => {
     expect(texto).toContain("Valor: R$ 54,90");
     expect(texto).toContain("Categoria: Alimentação");
     expect(texto).toContain("Data: 30/09/2026");
-    expect(botoes(ctx.client)).toEqual(["ok:id-1", "no:id-1"]);
+    expect(botoes(ctx.client)).toEqual(["ok:id-1", "pe:id-1", "no:id-1"]);
     expect(ctx.sheets.dump("despesas")).toHaveLength(0);
     expect(ctx.sheets.dump("pendentes")).toHaveLength(1);
   });
@@ -205,6 +205,7 @@ describe("tipo incerto", () => {
     expect(texto).toContain("Descrição: Pix Joao");
     expect(opcoes.inlineKeyboard.flat().map((b: { callback_data: string }) => b.callback_data)).toEqual([
       "ok:id-1",
+      "pe:id-1",
       "no:id-1",
     ]);
     expect(ctx.sheets.dump("entradas")).toHaveLength(0);

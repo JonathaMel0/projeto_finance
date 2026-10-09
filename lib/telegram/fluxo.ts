@@ -4,6 +4,7 @@ import {
   formatTimeSaoPaulo,
   getAnoMesAtual,
 } from "@/lib/finance/datetime";
+import type { AuditLog } from "@/lib/finance/audit-log";
 import type { FinanceRepository } from "@/lib/finance/repository";
 import {
   completarRascunho,
@@ -55,10 +56,11 @@ function parseCallbackData(
   return { acao: m[1] as Acao, id: m[2] as string };
 }
 
-function tecladoConfirmacao(id: string): InlineKeyboardButton[][] {
+export function tecladoConfirmacao(id: string): InlineKeyboardButton[][] {
   return [
     [
       { text: "✅ Confirmar", callback_data: `ok:${id}` },
+      { text: "✏️ Editar", callback_data: `pe:${id}` },
       { text: "❌ Cancelar", callback_data: `no:${id}` },
     ],
   ];
@@ -74,7 +76,7 @@ function tecladoTipo(id: string): InlineKeyboardButton[][] {
   ];
 }
 
-function textoConfirmacao(l: LancamentoParseado, hoje: string): string {
+export function textoConfirmacao(l: LancamentoParseado, hoje: string): string {
   const linhas = [
     "Lançamento identificado:",
     "",
@@ -102,7 +104,7 @@ function textoPerguntaTipo(r: RascunhoLancamento, hoje: string): string {
   ].join("\n");
 }
 
-function dataDoPendente(pendente: Pendente): string {
+export function dataDoPendente(pendente: Pendente): string {
   return formatDateSaoPaulo(new Date(pendente.criadoEm));
 }
 
@@ -115,6 +117,8 @@ export interface FluxoDeps {
   repo: FinanceRepository;
   store: PendingStore;
   config?: ParserConfig;
+  /** Trilha de auditoria (aba `logs`); opcional. */
+  audit?: AuditLog;
   /** Injetáveis para testes. */
   agora?: () => Date;
   novoId?: () => string;
@@ -258,6 +262,17 @@ export function criarFluxo(deps: FluxoDeps) {
     }
 
     await gravar(pendente, lancamento);
+    await deps.audit?.registrar({
+      operacao: "criacao",
+      detalhes: {
+        id: pendente.id,
+        tipo: lancamento.tipo,
+        descricao: lancamento.descricao,
+        valor: lancamento.valor,
+        categoria: lancamento.categoria,
+        usuario: pendente.userId,
+      },
+    });
     await store.remover(pendente.id);
     await editar(await textoRegistrado(lancamento, hoje));
   }

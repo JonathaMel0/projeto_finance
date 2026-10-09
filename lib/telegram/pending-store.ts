@@ -1,13 +1,31 @@
 import type { SheetsDataSource } from "@/lib/google-sheets/client";
 import { SHEET_NAMES } from "@/lib/google-sheets/schema";
-import type { LancamentoParseado, RascunhoLancamento } from "@/lib/parser";
+import type {
+  CampoEditavel,
+  LancamentoParseado,
+  RascunhoLancamento,
+} from "@/lib/parser";
 
 /** Lançamentos pendentes expiram depois deste tempo sem resposta. */
 export const VALIDADE_PENDENTE_MS = 24 * 60 * 60 * 1000;
 
+/** Edição de um campo à espera do novo valor digitado pelo usuário. */
+export interface EdicaoAberta {
+  kind: "edicao";
+  /** O que está sendo editado: um lançamento já gravado ou um pendente. */
+  alvo: { tipo: "lancamento" | "pendente"; id: string };
+  campo: CampoEditavel;
+  /** Mensagem do bot a ser atualizada quando a edição terminar. */
+  messageId: number;
+}
+
 export type ConteudoPendente =
   | { kind: "lancamento"; lancamento: LancamentoParseado }
-  | { kind: "tipo"; rascunho: RascunhoLancamento };
+  | { kind: "tipo"; rascunho: RascunhoLancamento }
+  | EdicaoAberta;
+
+/** Edições abertas expiram rápido, para não capturar mensagens muito depois. */
+export const VALIDADE_EDICAO_MS = 10 * 60 * 1000;
 
 export interface Pendente {
   id: string;
@@ -25,6 +43,8 @@ export interface Pendente {
 export interface PendingStore {
   salvar(pendente: Pendente): Promise<void>;
   buscar(id: string): Promise<Pendente | null>;
+  /** Edição mais recente aguardando texto desse usuário nesse chat. */
+  buscarEdicaoAberta(chatId: number, userId: number): Promise<Pendente | null>;
   atualizar(pendente: Pendente): Promise<void>;
   remover(id: string): Promise<void>;
 }
@@ -48,6 +68,32 @@ export class SheetsPendingStore implements PendingStore {
     } catch {
       return null;
     }
+  }
+
+  async buscarEdicaoAberta(
+    chatId: number,
+    userId: number,
+  ): Promise<Pendente | null> {
+    const rows = await this.sheets.readRows(SHEET_NAMES.pendentes);
+    let maisRecente: Pendente | null = null;
+    for (const row of rows) {
+      try {
+        const dados = JSON.parse(row[1] ?? "") as DadosSerializados;
+        if (
+          dados.conteudo.kind !== "edicao" ||
+          dados.chatId !== chatId ||
+          dados.userId !== userId
+        ) {
+          continue;
+        }
+        if (!maisRecente || dados.criadoEm > maisRecente.criadoEm) {
+          maisRecente = { id: row[0] ?? "", ...dados };
+        }
+      } catch {
+        // linha corrompida: ignora
+      }
+    }
+    return maisRecente;
   }
 
   async atualizar(pendente: Pendente): Promise<void> {

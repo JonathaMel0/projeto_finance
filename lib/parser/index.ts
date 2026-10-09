@@ -22,6 +22,14 @@ const INICIO_DE_CONSULTA = new Set([
 
 export { PARSER_CONFIG_PADRAO } from "./config";
 export { parseValorBR } from "./valor";
+export {
+  interpretarCampo,
+  nomesDeCategoria,
+  reconhecerCampo,
+  ROTULO_CAMPO,
+  type CampoEditavel,
+  type ResultadoCampo,
+} from "./campos";
 export * from "./types";
 
 /**

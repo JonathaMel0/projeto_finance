@@ -1,10 +1,11 @@
 import { NextResponse } from "next/server";
 import { getFinanceRepository } from "@/lib/finance";
+import { SheetsAuditLog } from "@/lib/finance/audit-log";
 import { createGoogleSheetsClient } from "@/lib/google-sheets/client";
 import { isValidWebhookSecret } from "@/lib/telegram/auth";
 import { HttpTelegramClient } from "@/lib/telegram/client";
 import { getTelegramEnv, type TelegramEnv } from "@/lib/telegram/env";
-import { criarFluxo } from "@/lib/telegram/fluxo";
+import { criarBot } from "@/lib/telegram/bot";
 import { handleUpdate } from "@/lib/telegram/handler";
 import { UpdateDeduplicator } from "@/lib/telegram/idempotency";
 import { SheetsPendingStore } from "@/lib/telegram/pending-store";
@@ -42,16 +43,19 @@ export async function POST(request: Request) {
   // Sempre responde 200 após validar, para o Telegram não reenviar o update.
   if (!deduplicator.seenBefore(update.update_id)) {
     const client = new HttpTelegramClient(env.botToken);
-    const fluxo = criarFluxo({
+    const sheets = createGoogleSheetsClient();
+    const bot = criarBot({
       client,
       repo: getFinanceRepository(),
-      store: new SheetsPendingStore(createGoogleSheetsClient()),
+      store: new SheetsPendingStore(sheets),
+      audit: new SheetsAuditLog(sheets),
     });
     await handleUpdate(update, {
       client,
       authorizedUserIds: env.authorizedUserIds,
-      onText: fluxo.onText,
-      onCallback: fluxo.onCallback,
+      onText: bot.onText,
+      onCommand: bot.onCommand,
+      onCallback: bot.onCallback,
     });
   }
 
