@@ -58,6 +58,8 @@ export interface DadosDashboard {
   resumo: ResumoMensal;
   /** Saldo em conta: saldo inicial + tudo o que entrou e saiu até o fim do mês (ou até hoje). */
   saldoEmConta: number;
+  /** Saldo em conta + despesas já pagas no mês: o dinheiro disponível antes dos gastos do mês. */
+  baseOrcamento: number;
   taxaPoupanca: number | null;
   categorias: ItemCategoria[];
   evolucao: PontoEvolucao[];
@@ -202,6 +204,11 @@ export function montarDashboard(
   const { ano, mes } = filtros;
   const doPeriodo = doMes(todos, ano, mes);
   const resumo = calcularResumoMensal(doPeriodo, ano, mes);
+  const limite = limiteDoSaldo(ano, mes, hoje);
+  const saldoEmConta = saldoAte(todos, saldoInicial, limite);
+  const gastoPagoNoMes = doPeriodo
+    .filter((l) => l.tipo === "despesa" && l.data <= limite)
+    .reduce((total, l) => total + l.valor, 0);
 
   const tabela = doPeriodo
     .filter((l) => !filtros.tipo || l.tipo === filtros.tipo)
@@ -228,7 +235,8 @@ export function montarDashboard(
 
   return {
     resumo,
-    saldoEmConta: saldoAte(todos, saldoInicial, limiteDoSaldo(ano, mes, hoje)),
+    saldoEmConta,
+    baseOrcamento: saldoEmConta + gastoPagoNoMes,
     taxaPoupanca:
       resumo.totalEntradas > 0
         ? (resumo.saldo / resumo.totalEntradas) * 100

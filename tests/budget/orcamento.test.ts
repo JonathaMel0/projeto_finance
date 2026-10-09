@@ -117,8 +117,16 @@ describe("carregarConfigOrcamento", () => {
 describe("calcularOrcamento", () => {
   const config = CONFIG_ORCAMENTO_PADRAO;
 
-  it("é nulo sem entradas", () => {
-    expect(calcularOrcamento(resumo(0, { Moradia: 100 }), config, { ano: 2026, mes: 10, dia: 5 })).toBeNull();
+  it("é nulo sem saldo positivo", () => {
+    const hoje = { ano: 2026, mes: 10, dia: 5 };
+    expect(calcularOrcamento(resumo(0, { Moradia: 100 }), config, hoje, 0)).toBeNull();
+    expect(calcularOrcamento(resumo(0, { Moradia: 100 }), config, hoje, -50)).toBeNull();
+  });
+
+  it("aplica os percentuais sobre a base, mesmo sem entradas no mês", () => {
+    const o = calcularOrcamento(resumo(0, { Moradia: 1000 }), config, { ano: 2026, mes: 10, dia: 5 }, 8000)!;
+    expect(o.base).toBe(8000);
+    expect(o.grupos[0]).toMatchObject({ planejado: 4000, realizado: 1000 });
   });
 
   it("separa planejado e realizado por grupo", () => {
@@ -126,6 +134,7 @@ describe("calcularOrcamento", () => {
       resumo(10000, { Moradia: 3000, Alimentação: 1000, Lazer: 500, Investimentos: 800 }),
       config,
       { ano: 2026, mes: 10, dia: 5 },
+      10000,
     )!;
     const [nec, des, obj] = o.grupos;
     expect(nec).toMatchObject({ planejado: 5000, realizado: 4000, restante: 1000, excesso: 0 });
@@ -140,7 +149,7 @@ describe("calcularOrcamento", () => {
       ano: 2026,
       mes: 10,
       dia: 22,
-    })!;
+    }, 10000)!;
     expect(o.diasRestantes).toBe(10);
     expect(o.limiteDiario).toBeCloseTo((8000 - 3000) / 10);
   });
@@ -150,7 +159,7 @@ describe("calcularOrcamento", () => {
       ano: 2026,
       mes: 10,
       dia: 5,
-    })!;
+    }, 10000)!;
     expect(o.diasRestantes).toBeNull();
     expect(o.limiteDiario).toBeNull();
   });
@@ -160,7 +169,7 @@ describe("calcularOrcamento", () => {
       ano: 2026,
       mes: 10,
       dia: 5,
-    })!;
+    }, 10000)!;
     expect(o.grupos[0]?.excesso).toBe(750);
     expect(o.grupos[1]?.excesso).toBe(500);
     expect(o.podeGastar).toBe(-1250);

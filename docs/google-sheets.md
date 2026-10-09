@@ -38,7 +38,9 @@ Cloud — nenhuma conta pessoal de usuário é usada.
    ```
    chave | valor
    ```
-   Opcional; sem ela vale o padrão 50/30/20. Chaves reconhecidas:
+   Opcional; sem ela vale o padrão 50/30/20. O orçamento do mês incide sobre
+   o **saldo em conta** (mais o que já foi gasto no mês, para os limites não
+   encolherem ao gastar), não sobre as entradas do mês. Chaves reconhecidas:
    - `saldo_inicial`: saldo da conta antes do primeiro lançamento (ex.:
      `2500,00`). O "Saldo em conta" do dashboard é esse valor + todas as
      entradas − todas as despesas até hoje, para bater com o banco. Ajuste

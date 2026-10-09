@@ -108,6 +108,16 @@ describe("saldo em conta (acumulado)", () => {
     expect(r.saldoEmConta).toBe(-100 - 50 - 50 - 200 - 30);
   });
 
+  it("a base do orçamento é o saldo em conta somado aos gastos já pagos no mês", () => {
+    const r = montarDashboard(dados, { ano: 2026, mes: 10 }, { saldoInicial: 500 });
+    // saldo 1070 + despesas de outubro (200): não encolhe ao gastar
+    expect(r.baseOrcamento).toBe(1270);
+
+    // lançamentos futuros não entram no saldo nem na base
+    const antes = montarDashboard(dados, { ano: 2026, mes: 10 }, { hoje: "2026-10-04" });
+    expect(antes.baseOrcamento).toBe(antes.saldoEmConta + 200);
+  });
+
   it("a evolução traz o saldo acumulado ao fim de cada mês", () => {
     const e = montarEvolucao(dados, 2026, 10, 3, 100);
     expect(e.map((p) => p.saldoAcumulado)).toEqual([

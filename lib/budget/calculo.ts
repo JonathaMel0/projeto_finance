@@ -21,7 +21,8 @@ export interface OrcamentoGrupo {
 }
 
 export interface Orcamento {
-  renda: number;
+  /** Valor disponível no mês sobre o qual os percentuais incidem. */
+  base: number;
   grupos: OrcamentoGrupo[];
   /** Limite de necessidades + desejos menos o já gasto neles (pode ser negativo). */
   podeGastar: number;
@@ -37,14 +38,19 @@ export interface Hoje {
   dia: number;
 }
 
-/** `null` quando não há entradas no mês: sem renda não há orçamento a calcular. */
+/**
+ * Os percentuais incidem sobre `base`: o saldo em conta somado ao que já foi
+ * gasto no mês (o dinheiro disponível antes dos gastos do mês), para que os
+ * limites não encolham à medida que você gasta. `null` quando a base não é
+ * positiva: não há o que distribuir.
+ */
 export function calcularOrcamento(
   resumo: ResumoMensal,
   config: ConfigOrcamento,
   hoje: Hoje,
+  base: number,
 ): Orcamento | null {
-  const renda = resumo.totalEntradas;
-  if (renda <= 0) return null;
+  if (base <= 0) return null;
 
   const gasto: Record<Grupo, number> = { necessidade: 0, desejo: 0, objetivo: 0 };
   for (const [categoria, valor] of Object.entries(resumo.despesasPorCategoria)) {
@@ -53,7 +59,7 @@ export function calcularOrcamento(
 
   const grupos = GRUPOS.map((grupo): OrcamentoGrupo => {
     const percentual = config.percentuais[grupo];
-    const planejado = (renda * percentual) / 100;
+    const planejado = (base * percentual) / 100;
     const realizado = gasto[grupo];
     const limite = grupo !== "objetivo";
     return {
@@ -79,7 +85,7 @@ export function calcularOrcamento(
     diasRestantes !== null && podeGastar > 0 ? podeGastar / diasRestantes : null;
 
   const sugestoes: string[] = [
-    `Você recebeu ${formatarMoeda(renda)} neste mês e gastou ${formatarMoeda(resumo.totalDespesas)}.`,
+    `Seu saldo disponível neste mês é ${formatarMoeda(base)} (saldo em conta + gastos do mês) e você já gastou ${formatarMoeda(resumo.totalDespesas)}.`,
   ];
   for (const g of grupos) {
     if (g.excesso > 0) {
@@ -104,5 +110,5 @@ export function calcularOrcamento(
     );
   }
 
-  return { renda, grupos, podeGastar, diasRestantes, limiteDiario, sugestoes };
+  return { base, grupos, podeGastar, diasRestantes, limiteDiario, sugestoes };
 }

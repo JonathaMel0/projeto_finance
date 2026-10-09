@@ -63,7 +63,12 @@ export default async function Home({
       saldoInicial: configuracao.saldoInicial,
       hoje: formatDateSaoPaulo(new Date()),
     });
-    orcamento = calcularOrcamento(dados.resumo, configuracao.config, hoje);
+    orcamento = calcularOrcamento(
+      dados.resumo,
+      configuracao.config,
+      hoje,
+      dados.baseOrcamento,
+    );
     avisos = configuracao.avisos;
   } catch (erro) {
     console.error("Falha ao carregar o dashboard", erro);

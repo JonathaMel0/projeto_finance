@@ -28,7 +28,8 @@ export function PainelOrcamento({
 
       {orcamento === null ? (
         <p className="py-6 text-center text-sm text-slate-400">
-          Registre uma entrada neste mês para calcular o orçamento.
+          Sem saldo positivo em conta para distribuir. Se o saldo do site
+          estiver diferente do banco, ajuste `saldo_inicial` na aba configuracoes.
         </p>
       ) : (
         <div className="grid gap-6 lg:grid-cols-2">
