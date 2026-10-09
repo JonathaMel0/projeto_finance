@@ -4,6 +4,7 @@ import {
   montarDashboard,
   montarDiario,
   montarEvolucao,
+  saldoAte,
 } from "@/lib/dashboard/dados";
 import type { Lancamento } from "@/types/finance";
 
@@ -78,6 +79,43 @@ describe("montarDashboard", () => {
     const r = montarDashboard(dados, { ano: 2026, mes: 10 });
     expect(r.opcoes.anos).toEqual([2026, 2025]);
     expect(r.opcoes.formasPagamento).toEqual(["crédito", "pix"]);
+  });
+});
+
+describe("saldo em conta (acumulado)", () => {
+  // entradas 1000; despesas: out 200, set 200, dez/2025 30
+  it("soma todos os meses até o fim do mês selecionado", () => {
+    expect(saldoAte(dados, 0, "2026-10-31")).toBe(1000 - 200 - 200 - 30);
+    expect(saldoAte(dados, 0, "2026-09-30")).toBe(-230);
+    expect(saldoAte(dados, 0, "2025-12-31")).toBe(-30);
+  });
+
+  it("inclui o saldo inicial", () => {
+    expect(saldoAte(dados, 500, "2026-10-31")).toBe(1070);
+  });
+
+  it("não depende do mês exibido nem dos filtros da tabela", () => {
+    const out = montarDashboard(dados, { ano: 2026, mes: 10, categoria: "lazer" });
+    const set = montarDashboard(dados, { ano: 2026, mes: 9 });
+    expect(out.saldoEmConta).toBe(570);
+    expect(set.saldoEmConta).toBe(-230);
+    expect(out.resumo.saldo).toBe(800);
+  });
+
+  it("ignora lançamentos futuros (ainda não estão na conta)", () => {
+    const r = montarDashboard(dados, { ano: 2026, mes: 10 }, { hoje: "2026-10-04" });
+    // a entrada de 05/10 ainda não aconteceu
+    expect(r.saldoEmConta).toBe(-100 - 50 - 50 - 200 - 30);
+  });
+
+  it("a evolução traz o saldo acumulado ao fim de cada mês", () => {
+    const e = montarEvolucao(dados, 2026, 10, 3, 100);
+    expect(e.map((p) => p.saldoAcumulado)).toEqual([
+      100 - 30 - 0, // agosto: só dez/2025
+      100 - 30 - 200, // setembro
+      100 - 30 - 200 + 1000 - 200, // outubro
+    ]);
+    expect(e[2]?.saldo).toBe(800);
   });
 });
 

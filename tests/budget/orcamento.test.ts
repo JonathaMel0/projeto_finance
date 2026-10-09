@@ -30,6 +30,19 @@ function resumo(
 }
 
 describe("lerConfigOrcamento", () => {
+  it("lê o saldo inicial em formatos comuns", () => {
+    expect(lerConfigOrcamento([]).saldoInicial).toBe(0);
+    expect(lerConfigOrcamento([["saldo_inicial", "1500.5"]]).saldoInicial).toBe(1500.5);
+    expect(lerConfigOrcamento([["saldo_inicial", "R$ 1.234,56"]]).saldoInicial).toBe(1234.56);
+    expect(lerConfigOrcamento([["saldo_inicial", "-200"]]).saldoInicial).toBe(-200);
+  });
+
+  it("avisa se o saldo inicial for inválido", () => {
+    const { saldoInicial, avisos } = lerConfigOrcamento([["saldo_inicial", "muito"]]);
+    expect(saldoInicial).toBe(0);
+    expect(avisos[0]).toContain("saldo_inicial");
+  });
+
   it("usa o padrão 50/30/20 sem configuração", () => {
     const { config, avisos } = lerConfigOrcamento([]);
     expect(config.percentuais).toEqual({ necessidade: 50, desejo: 30, objetivo: 20 });

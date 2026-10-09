@@ -8,6 +8,9 @@ const MENSAGENS: Record<string, string> = {
 
 export const metadata = { title: "Entrar" };
 
+const CAMPO =
+  "mt-1.5 w-full rounded-xl border-0 bg-slate-100 px-3.5 py-2.5 text-sm outline-none ring-1 ring-transparent transition focus:bg-white focus:ring-slate-900";
+
 export default async function LoginPage({
   searchParams,
 }: {
@@ -21,19 +24,22 @@ export default async function LoginPage({
       <form
         method="post"
         action="/api/auth/login"
-        className="w-full max-w-sm space-y-4 rounded-lg border border-gray-200 p-6 shadow-sm"
+        className="w-full max-w-sm space-y-5 rounded-3xl bg-white p-8 ring-1 ring-slate-200/70"
       >
-        <h1 className="text-2xl font-semibold">Entrar</h1>
+        <div>
+          <h1 className="text-2xl font-semibold tracking-tight">Despesas</h1>
+          <p className="mt-1 text-sm text-slate-500">Entre para ver suas finanças.</p>
+        </div>
 
         {mensagem && (
-          <p role="alert" className="rounded bg-red-50 p-3 text-sm text-red-700">
+          <p role="alert" className="rounded-xl bg-rose-50 px-3.5 py-2.5 text-sm text-rose-700">
             {mensagem}
           </p>
         )}
 
         <input type="hidden" name="next" value={destinoSeguro(next)} />
 
-        <label className="block text-sm">
+        <label className="block text-sm font-medium text-slate-600">
           Usuário
           <input
             name="usuario"
@@ -41,24 +47,24 @@ export default async function LoginPage({
             autoComplete="username"
             required
             autoFocus
-            className="mt-1 w-full rounded border border-gray-300 p-2"
+            className={CAMPO}
           />
         </label>
 
-        <label className="block text-sm">
+        <label className="block text-sm font-medium text-slate-600">
           Senha
           <input
             name="senha"
             type="password"
             autoComplete="current-password"
             required
-            className="mt-1 w-full rounded border border-gray-300 p-2"
+            className={CAMPO}
           />
         </label>
 
         <button
           type="submit"
-          className="w-full rounded bg-gray-900 p-2 font-medium text-white hover:bg-gray-700"
+          className="w-full rounded-xl bg-slate-900 py-2.5 text-sm font-medium text-white transition hover:bg-slate-700"
         >
           Entrar
         </button>

@@ -3,8 +3,20 @@ const BRL = new Intl.NumberFormat("pt-BR", {
   currency: "BRL",
 });
 
+const BRL_COMPACTO = new Intl.NumberFormat("pt-BR", {
+  style: "currency",
+  currency: "BRL",
+  notation: "compact",
+  maximumFractionDigits: 1,
+});
+
 export function formatarMoeda(valor: number): string {
   return BRL.format(valor);
+}
+
+/** "R$ 12,3 mil" — para rótulos pequenos de gráfico. */
+export function formatarMoedaCompacta(valor: number): string {
+  return BRL_COMPACTO.format(valor);
 }
 
 export function formatarPercentual(valor: number): string {

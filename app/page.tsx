@@ -1,22 +1,27 @@
 import { getFinanceRepository } from "@/lib/finance";
-import { getHojeSaoPaulo } from "@/lib/finance/datetime";
+import { formatDateSaoPaulo, getHojeSaoPaulo } from "@/lib/finance/datetime";
 import { createGoogleSheetsClient } from "@/lib/google-sheets/client";
 import { calcularOrcamento } from "@/lib/budget/calculo";
 import { carregarConfigOrcamento } from "@/lib/budget/config";
-import { PainelOrcamento } from "@/components/dashboard/orcamento";
-import { lerFiltros, MESES, montarDashboard } from "@/lib/dashboard/dados";
+import { lerFiltros, montarDashboard } from "@/lib/dashboard/dados";
 import { formatarMoeda, formatarPercentual } from "@/lib/dashboard/formatar";
-import { Filtros } from "@/components/dashboard/filtros";
+import {
+  FiltrosTabela,
+  NavegacaoMes,
+  SeletorPeriodo,
+} from "@/components/dashboard/filtros";
 import {
   GraficoCategorias,
   GraficoDiario,
   GraficoEvolucao,
 } from "@/components/dashboard/graficos";
+import { PainelOrcamento } from "@/components/dashboard/orcamento";
+import { Painel } from "@/components/dashboard/painel";
 import { TabelaLancamentos } from "@/components/dashboard/tabela";
 
 export const dynamic = "force-dynamic";
 
-function Card({
+function Indicador({
   titulo,
   valor,
   cor,
@@ -26,9 +31,12 @@ function Card({
   cor?: string;
 }) {
   return (
-    <div className="rounded-lg border border-gray-200 bg-white p-4 shadow-sm">
-      <div className="text-xs uppercase text-gray-500">{titulo}</div>
-      <div className={`mt-1 text-2xl font-semibold ${cor ?? "text-gray-900"}`}>
+    <div className="rounded-2xl bg-white p-4 ring-1 ring-slate-200/70">
+      <div className="flex items-center gap-2 text-xs text-slate-400">
+        {cor && <span className={`h-1.5 w-1.5 rounded-full ${cor}`} />}
+        {titulo}
+      </div>
+      <div className="mt-1.5 text-xl font-semibold tracking-tight tabular-nums">
         {valor}
       </div>
     </div>
@@ -51,14 +59,17 @@ export default async function Home({
       getFinanceRepository().listarLancamentos(),
       carregarConfigOrcamento(createGoogleSheetsClient()),
     ]);
-    dados = montarDashboard(todos, filtros);
+    dados = montarDashboard(todos, filtros, {
+      saldoInicial: configuracao.saldoInicial,
+      hoje: formatDateSaoPaulo(new Date()),
+    });
     orcamento = calcularOrcamento(dados.resumo, configuracao.config, hoje);
     avisos = configuracao.avisos;
   } catch (erro) {
     console.error("Falha ao carregar o dashboard", erro);
     return (
       <main className="mx-auto max-w-5xl p-6">
-        <p className="rounded border border-rose-200 bg-rose-50 p-4 text-sm text-rose-700">
+        <p className="rounded-2xl bg-rose-50 p-5 text-sm text-rose-700 ring-1 ring-rose-100">
           Não foi possível ler a planilha. Verifique as variáveis do Google
           Sheets e tente novamente.
         </p>
@@ -66,77 +77,88 @@ export default async function Home({
     );
   }
 
-  const { resumo, taxaPoupanca } = dados;
+  const { resumo, taxaPoupanca, saldoEmConta } = dados;
+  const investido = orcamento?.grupos.find((g) => g.grupo === "objetivo")?.realizado;
 
   return (
-    <main className="mx-auto max-w-5xl space-y-4 p-4 sm:p-6">
-      <header className="flex items-center justify-between">
-        <div>
-          <h1 className="text-xl font-semibold text-gray-900">
-            Controle financeiro
-          </h1>
-          <p className="text-sm text-gray-600">
-            {MESES[filtros.mes - 1]}/{filtros.ano}
-          </p>
+    <main className="mx-auto max-w-5xl space-y-5 px-4 py-6 sm:px-6 sm:py-10">
+      <header className="flex flex-wrap items-center justify-between gap-4">
+        <NavegacaoMes filtros={filtros} atual={hoje} />
+        <div className="flex items-center gap-3">
+          <SeletorPeriodo filtros={filtros} anos={dados.opcoes.anos} />
+          <form method="post" action="/api/auth/logout">
+            <button
+              type="submit"
+              className="rounded-xl px-3 py-2 text-sm text-slate-500 transition hover:bg-white hover:text-slate-900"
+            >
+              Sair
+            </button>
+          </form>
         </div>
-        <form method="post" action="/api/auth/logout">
-          <button
-            type="submit"
-            className="rounded border border-gray-300 px-3 py-1.5 text-sm hover:bg-gray-100"
-          >
-            Sair
-          </button>
-        </form>
       </header>
 
-      <Filtros filtros={filtros} opcoes={dados.opcoes} />
+      <section className="rounded-3xl bg-slate-900 p-6 text-white sm:p-8">
+        <div className="text-sm text-slate-400">Saldo em conta</div>
+        <div
+          className={`mt-2 text-4xl font-semibold tracking-tight tabular-nums sm:text-5xl ${
+            saldoEmConta < 0 ? "text-rose-300" : ""
+          }`}
+        >
+          {formatarMoeda(saldoEmConta)}
+        </div>
+        <div className="mt-3 text-sm text-slate-400">
+          Acumulado de todos os meses. No mês, o resultado é{" "}
+          <span
+            className={`font-medium tabular-nums ${
+              resumo.saldo < 0 ? "text-rose-300" : "text-emerald-300"
+            }`}
+          >
+            {resumo.saldo >= 0 ? "+" : "−"} {formatarMoeda(Math.abs(resumo.saldo))}
+          </span>
+          .
+        </div>
+      </section>
 
-      <div className="grid grid-cols-2 gap-3 lg:grid-cols-3">
-        <Card
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+        <Indicador
           titulo="Entradas"
           valor={formatarMoeda(resumo.totalEntradas)}
-          cor="text-emerald-600"
+          cor="bg-emerald-400"
         />
-        <Card
+        <Indicador
           titulo="Despesas"
           valor={formatarMoeda(resumo.totalDespesas)}
-          cor="text-rose-600"
+          cor="bg-rose-400"
         />
-        <Card
-          titulo="Saldo"
-          valor={formatarMoeda(resumo.saldo)}
-          cor={resumo.saldo < 0 ? "text-rose-600" : undefined}
-        />
-        <Card
+        <Indicador
           titulo="Poupança"
           valor={taxaPoupanca === null ? "—" : formatarPercentual(taxaPoupanca)}
         />
-        <Card
+        <Indicador
           titulo="Investido / guardado"
-          valor={
-            orcamento
-              ? formatarMoeda(
-                  orcamento.grupos.find((g) => g.grupo === "objetivo")?.realizado ?? 0,
-                )
-              : "—"
-          }
-        />
-        <Card
-          titulo="Orçamento restante"
-          valor={orcamento ? formatarMoeda(orcamento.podeGastar) : "—"}
-          cor={orcamento && orcamento.podeGastar < 0 ? "text-rose-600" : undefined}
+          valor={investido === undefined ? "—" : formatarMoeda(investido)}
         />
       </div>
 
       <PainelOrcamento orcamento={orcamento} avisos={avisos} />
 
-      <div className="grid gap-4 lg:grid-cols-2">
-        <GraficoCategorias itens={dados.categorias} />
-        <GraficoEvolucao pontos={dados.evolucao} />
+      <div className="grid gap-5 lg:grid-cols-2">
+        <GraficoCategorias
+          itens={dados.categorias}
+          total={resumo.totalDespesas}
+        />
+        <div className="space-y-5">
+          <GraficoEvolucao pontos={dados.evolucao} />
+          <GraficoDiario pontos={dados.diario} />
+        </div>
       </div>
-      <GraficoDiario pontos={dados.diario} />
 
-      <TabelaLancamentos lancamentos={dados.lancamentos} />
+      <Painel titulo={`Lançamentos · ${dados.lancamentos.length}`}>
+        <div className="space-y-4">
+          <FiltrosTabela filtros={filtros} opcoes={dados.opcoes} />
+          <TabelaLancamentos lancamentos={dados.lancamentos} />
+        </div>
+      </Painel>
     </main>
   );
 }

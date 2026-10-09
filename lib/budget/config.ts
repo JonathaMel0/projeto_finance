@@ -66,7 +66,9 @@ export function grupoDaCategoria(
 }
 
 function lerNumero(valor: string): number | null {
-  const limpo = valor.replace("%", "").replace(",", ".").trim();
+  let limpo = valor.replace(/R\$|%|\s/g, "");
+  // Formato brasileiro (1.234,56): o ponto é separador de milhar.
+  if (limpo.includes(",")) limpo = limpo.replace(/\./g, "").replace(",", ".");
   if (limpo === "") return null;
   const n = Number(limpo);
   return Number.isFinite(n) ? n : null;
@@ -84,15 +86,25 @@ function lerGrupo(valor: string): Grupo | null {
  * Monta a configuração a partir das linhas (chave, valor) da aba
  * `configuracoes`. Valores ausentes usam o padrão; valores inválidos também,
  * e cada problema vira um aviso para aparecer no dashboard.
+ * `saldo_inicial` é o saldo da conta antes do primeiro lançamento.
  */
 export function lerConfigOrcamento(linhas: string[][]): {
   config: ConfigOrcamento;
   avisos: string[];
+  saldoInicial: number;
 } {
   const avisos: string[] = [];
   const mapa = new Map<string, string>();
   for (const [chave = "", valor = ""] of linhas) {
     if (chave.trim()) mapa.set(normalizar(chave), valor.trim());
+  }
+
+  let saldoInicial = 0;
+  const brutoSaldo = mapa.get("saldo_inicial");
+  if (brutoSaldo) {
+    const n = lerNumero(brutoSaldo);
+    if (n === null) avisos.push(`Valor inválido em "saldo_inicial": "${brutoSaldo}".`);
+    else saldoInicial = n;
   }
 
   const percentuais = { ...CONFIG_ORCAMENTO_PADRAO.percentuais };
@@ -140,6 +152,7 @@ export function lerConfigOrcamento(linhas: string[][]): {
   return {
     config: { ...CONFIG_ORCAMENTO_PADRAO, percentuais, classificacao },
     avisos,
+    saldoInicial,
   };
 }
 
@@ -154,6 +167,7 @@ export async function carregarConfigOrcamento(sheets: SheetsDataSource) {
       avisos: [
         "Não foi possível ler a aba configuracoes; usando o padrão 50/30/20.",
       ],
+      saldoInicial: 0,
     };
   }
 }

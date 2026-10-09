@@ -36,7 +36,10 @@ export interface PontoEvolucao {
   mes: number;
   entradas: number;
   despesas: number;
+  /** Resultado do mês (entradas - despesas). */
   saldo: number;
+  /** Saldo em conta ao fim do mês, somando todos os meses anteriores. */
+  saldoAcumulado: number;
 }
 
 export interface PontoDiario {
@@ -53,6 +56,8 @@ export interface ItemCategoria {
 
 export interface DadosDashboard {
   resumo: ResumoMensal;
+  /** Saldo em conta: saldo inicial + tudo o que entrou e saiu até o fim do mês (ou até hoje). */
+  saldoEmConta: number;
   taxaPoupanca: number | null;
   categorias: ItemCategoria[];
   evolucao: PontoEvolucao[];
@@ -108,11 +113,40 @@ export function montarCategorias(
     .sort((a, b) => b.valor - a.valor);
 }
 
+function ultimoDiaDoMes(ano: number, mes: number): string {
+  return `${prefixoAnoMes(ano, mes)}-31`;
+}
+
+/**
+ * Saldo em conta até uma data: saldo inicial + entradas - despesas com data
+ * menor ou igual a `ate` ("YYYY-MM-DD").
+ */
+export function saldoAte(
+  lancamentos: Lancamento[],
+  saldoInicial: number,
+  ate: string,
+): number {
+  let saldo = saldoInicial;
+  for (const l of lancamentos) {
+    if (l.data > ate) continue;
+    saldo += l.tipo === "entrada" ? l.valor : -l.valor;
+  }
+  return saldo;
+}
+
+/** Fim do mês, mas nunca depois de hoje: lançamentos futuros ainda não estão na conta. */
+function limiteDoSaldo(ano: number, mes: number, hoje?: string): string {
+  const fim = ultimoDiaDoMes(ano, mes);
+  return hoje && hoje < fim ? hoje : fim;
+}
+
 export function montarEvolucao(
   lancamentos: Lancamento[],
   ano: number,
   mes: number,
   meses = MESES_EVOLUCAO,
+  saldoInicial = 0,
+  hoje?: string,
 ): PontoEvolucao[] {
   const pontos: PontoEvolucao[] = [];
   for (let i = meses - 1; i >= 0; i--) {
@@ -126,6 +160,7 @@ export function montarEvolucao(
       entradas: r.totalEntradas,
       despesas: r.totalDespesas,
       saldo: r.saldo,
+      saldoAcumulado: saldoAte(lancamentos, saldoInicial, limiteDoSaldo(a, m, hoje)),
     });
   }
   return pontos;
@@ -155,12 +190,15 @@ export function montarDiario(
 
 /**
  * Mês e ano definem o período do resumo e dos gráficos; categoria, tipo e
- * forma de pagamento filtram apenas a tabela de lançamentos.
+ * forma de pagamento filtram apenas a tabela de lançamentos. O saldo em conta
+ * é acumulado desde o início, não só do mês.
  */
 export function montarDashboard(
   todos: Lancamento[],
   filtros: FiltrosDashboard,
+  opcoes: { saldoInicial?: number; hoje?: string } = {},
 ): DadosDashboard {
+  const { saldoInicial = 0, hoje } = opcoes;
   const { ano, mes } = filtros;
   const doPeriodo = doMes(todos, ano, mes);
   const resumo = calcularResumoMensal(doPeriodo, ano, mes);
@@ -190,12 +228,13 @@ export function montarDashboard(
 
   return {
     resumo,
+    saldoEmConta: saldoAte(todos, saldoInicial, limiteDoSaldo(ano, mes, hoje)),
     taxaPoupanca:
       resumo.totalEntradas > 0
         ? (resumo.saldo / resumo.totalEntradas) * 100
         : null,
     categorias: montarCategorias(resumo.despesasPorCategoria),
-    evolucao: montarEvolucao(todos, ano, mes),
+    evolucao: montarEvolucao(todos, ano, mes, MESES_EVOLUCAO, saldoInicial, hoje),
     diario: montarDiario(doPeriodo, ano, mes),
     lancamentos: tabela,
     opcoes: {

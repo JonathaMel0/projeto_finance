@@ -39,6 +39,10 @@ Cloud — nenhuma conta pessoal de usuário é usada.
    chave | valor
    ```
    Opcional; sem ela vale o padrão 50/30/20. Chaves reconhecidas:
+   - `saldo_inicial`: saldo da conta antes do primeiro lançamento (ex.:
+     `2500,00`). O "Saldo em conta" do dashboard é esse valor + todas as
+     entradas − todas as despesas até hoje, para bater com o banco. Ajuste
+     este valor se o saldo do site diferir do da conta.
    - `orcamento_necessidades`, `orcamento_desejos`, `orcamento_objetivos`:
      percentuais da renda (ex.: `60`, `20`, `20`); precisam somar 100.
    - `classificacao_<categoria>`: `necessidade`, `desejo` ou `objetivo`
