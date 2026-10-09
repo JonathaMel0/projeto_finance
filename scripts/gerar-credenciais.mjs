@@ -56,10 +56,19 @@ function derivar(senha, salt) {
 if (process.argv.includes("--secret")) {
   console.log(`AUTH_SECRET=${randomBytes(48).toString("base64url")}`);
 } else {
+  console.error("A senha não aparece enquanto você digita (é normal).");
   const senha = await lerSenhaOculta("Nova senha (mínimo 10 caracteres): ");
   if (senha.length < 10) {
     console.error("Senha muito curta.");
     process.exit(1);
+  }
+  // Sem terminal interativo (entrada por pipe) só há uma linha para ler.
+  if (process.stdin.isTTY) {
+    const confirmacao = await lerSenhaOculta("Repita a senha: ");
+    if (confirmacao !== senha) {
+      console.error("As senhas não são iguais. Rode o script de novo.");
+      process.exit(1);
+    }
   }
   const salt = randomBytes(16);
   const chave = await derivar(senha, salt);

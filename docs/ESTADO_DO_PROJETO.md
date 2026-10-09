@@ -23,10 +23,10 @@ sem LLM (parser por regras).
 | 4 | Parser determinístico | feita |
 | 5 | Confirmação por botões + gravação + idempotência | feita (testada só com Sheets falso e no ciclo real do repositório; **falta teste no Telegram**) |
 | 6 | Edição e exclusão (`/editar`, `/excluir`, `/ultimos`, botão Editar, log na aba `logs`) | feita e testada no Telegram |
-| 7 | Autenticação do site (login, senha com hash, `AUTH_SECRET`) | feita (ver `docs/autenticacao.md`); **falta configurar as variáveis na Vercel e testar** |
-| 8 | Dashboard (resumo, gráficos, filtros, tabela de lançamentos) | pendente |
+| 7 | Autenticação do site (login, senha com hash, `AUTH_SECRET`) | feita e testada localmente; **falta configurar as variáveis na Vercel e testar lá** (após editar `.env.local`, reinicie o `npm run dev`) |
+| 8 | Dashboard (resumo, gráficos, filtros, tabela de lançamentos) | feita e testada localmente com a planilha real (somente leitura) |
 | 9 | Orçamento 50/30/20 configurável + "quanto ainda posso gastar" | pendente |
-| 10 | Testes | parcial (157 testes passando; faltam os das fases 8+) |
+| 10 | Testes | parcial (165 testes passando; faltam os das fases 9+) |
 | 11 | Deploy na Vercel | **em andamento (próximo passo imediato)** |
 | 12 | Documentação | parcial |
 
@@ -43,7 +43,11 @@ consultas em linguagem natural (`quanto gastei…`), `/saldo`, `/mes`,
 - `lib/telegram/` – webhook seguro, autorização, idempotência por `update_id`,
   `fluxo.ts` (confirmação), `pending-store.ts` (aba `pendentes`).
 - `app/api/telegram/webhook/route.ts` – único endpoint existente.
-- `app/page.tsx` – ainda é um placeholder.
+- `app/page.tsx` – dashboard (server component; lê tudo via `FinanceRepository`).
+  Lógica pura em `lib/dashboard/`, componentes em `components/dashboard/`,
+  gráficos em CSS/SVG (sem biblioteca). Mês/ano definem resumo e gráficos;
+  tipo/categoria/pagamento filtram só a tabela. Sem ações de editar/excluir
+  no site (isso continua no Telegram).
 - `tests/` – Vitest (`npm test`).
 
 ## Decisões tomadas
