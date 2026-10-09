@@ -31,6 +31,18 @@ export function getAnoMesAtual(referencia: Date = new Date()): {
   return { ano, mes };
 }
 
+/** Ano, mês e dia atuais, considerando o fuso de São Paulo. */
+export function getHojeSaoPaulo(referencia: Date = new Date()): {
+  ano: number;
+  mes: number;
+  dia: number;
+} {
+  const [ano = 0, mes = 0, dia = 0] = formatDateSaoPaulo(referencia)
+    .split("-")
+    .map(Number);
+  return { ano, mes, dia };
+}
+
 /** Prefixo "YYYY-MM" usado para filtrar lançamentos de um mês específico. */
 export function prefixoAnoMes(ano: number, mes: number): string {
   return `${String(ano).padStart(4, "0")}-${String(mes).padStart(2, "0")}`;

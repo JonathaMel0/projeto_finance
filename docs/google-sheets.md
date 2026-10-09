@@ -38,6 +38,14 @@ Cloud — nenhuma conta pessoal de usuário é usada.
    ```
    chave | valor
    ```
+   Opcional; sem ela vale o padrão 50/30/20. Chaves reconhecidas:
+   - `orcamento_necessidades`, `orcamento_desejos`, `orcamento_objetivos`:
+     percentuais da renda (ex.: `60`, `20`, `20`); precisam somar 100.
+   - `classificacao_<categoria>`: `necessidade`, `desejo` ou `objetivo`
+     (ex.: chave `classificacao_Lazer`, valor `desejo`). Categoria sem
+     classificação conta como desejo.
+
+   Entradas inválidas são ignoradas e aparecem como aviso no dashboard.
 
    **usuarios**
    ```

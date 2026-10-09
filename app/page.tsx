@@ -1,5 +1,9 @@
 import { getFinanceRepository } from "@/lib/finance";
-import { getAnoMesAtual } from "@/lib/finance/datetime";
+import { getHojeSaoPaulo } from "@/lib/finance/datetime";
+import { createGoogleSheetsClient } from "@/lib/google-sheets/client";
+import { calcularOrcamento } from "@/lib/budget/calculo";
+import { carregarConfigOrcamento } from "@/lib/budget/config";
+import { PainelOrcamento } from "@/components/dashboard/orcamento";
 import { lerFiltros, MESES, montarDashboard } from "@/lib/dashboard/dados";
 import { formatarMoeda, formatarPercentual } from "@/lib/dashboard/formatar";
 import { Filtros } from "@/components/dashboard/filtros";
@@ -36,12 +40,20 @@ export default async function Home({
 }: {
   searchParams: Promise<Record<string, string | string[] | undefined>>;
 }) {
-  const filtros = lerFiltros(await searchParams, getAnoMesAtual());
+  const hoje = getHojeSaoPaulo();
+  const filtros = lerFiltros(await searchParams, hoje);
 
   let dados;
+  let orcamento;
+  let avisos: string[];
   try {
-    const todos = await getFinanceRepository().listarLancamentos();
+    const [todos, configuracao] = await Promise.all([
+      getFinanceRepository().listarLancamentos(),
+      carregarConfigOrcamento(createGoogleSheetsClient()),
+    ]);
     dados = montarDashboard(todos, filtros);
+    orcamento = calcularOrcamento(dados.resumo, configuracao.config, hoje);
+    avisos = configuracao.avisos;
   } catch (erro) {
     console.error("Falha ao carregar o dashboard", erro);
     return (
@@ -79,7 +91,7 @@ export default async function Home({
 
       <Filtros filtros={filtros} opcoes={dados.opcoes} />
 
-      <div className="grid grid-cols-2 gap-3 lg:grid-cols-4">
+      <div className="grid grid-cols-2 gap-3 lg:grid-cols-3">
         <Card
           titulo="Entradas"
           valor={formatarMoeda(resumo.totalEntradas)}
@@ -99,7 +111,24 @@ export default async function Home({
           titulo="Poupança"
           valor={taxaPoupanca === null ? "—" : formatarPercentual(taxaPoupanca)}
         />
+        <Card
+          titulo="Investido / guardado"
+          valor={
+            orcamento
+              ? formatarMoeda(
+                  orcamento.grupos.find((g) => g.grupo === "objetivo")?.realizado ?? 0,
+                )
+              : "—"
+          }
+        />
+        <Card
+          titulo="Orçamento restante"
+          valor={orcamento ? formatarMoeda(orcamento.podeGastar) : "—"}
+          cor={orcamento && orcamento.podeGastar < 0 ? "text-rose-600" : undefined}
+        />
       </div>
+
+      <PainelOrcamento orcamento={orcamento} avisos={avisos} />
 
       <div className="grid gap-4 lg:grid-cols-2">
         <GraficoCategorias itens={dados.categorias} />

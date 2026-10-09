@@ -25,8 +25,8 @@ sem LLM (parser por regras).
 | 6 | Edição e exclusão (`/editar`, `/excluir`, `/ultimos`, botão Editar, log na aba `logs`) | feita e testada no Telegram |
 | 7 | Autenticação do site (login, senha com hash, `AUTH_SECRET`) | feita e testada localmente; **falta configurar as variáveis na Vercel e testar lá** (após editar `.env.local`, reinicie o `npm run dev`) |
 | 8 | Dashboard (resumo, gráficos, filtros, tabela de lançamentos) | feita e testada localmente com a planilha real (somente leitura) |
-| 9 | Orçamento 50/30/20 configurável + "quanto ainda posso gastar" | pendente |
-| 10 | Testes | parcial (165 testes passando; faltam os das fases 9+) |
+| 9 | Orçamento 50/30/20 configurável + "quanto ainda posso gastar" | feita (config na aba `configuracoes`, ver `docs/google-sheets.md`; **falta testar no deploy**) |
+| 10 | Testes | parcial (177 testes passando) |
 | 11 | Deploy na Vercel | **em andamento (próximo passo imediato)** |
 | 12 | Documentação | parcial |
 
