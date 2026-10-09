@@ -1,0 +1,1620 @@
+# Projeto: Aplicação pessoal de controle financeiro integrada ao Telegram e Google Sheets
+
+## 1. Objetivo
+
+Quero desenvolver uma aplicação pessoal de controle financeiro com foco em:
+
+* simplicidade;
+* baixo custo;
+* facilidade de manutenção;
+* possibilidade de hospedar gratuitamente ou com custo próximo de zero;
+* lançamento de receitas e despesas através do Telegram;
+* armazenamento dos dados no Google Sheets;
+* dashboard web responsivo para computador e celular;
+* possibilidade de editar e excluir lançamentos;
+* relatórios mensais;
+* acompanhamento de orçamento;
+* sugestões de limite de gastos e organização financeira.
+
+É um projeto pessoal, portanto não quero uma arquitetura empresarial complexa.
+
+**Não quero gastar dinheiro com APIs de LLM inicialmente.**
+
+A aplicação deve funcionar prioritariamente através de regras e processamento determinístico. Se futuramente for interessante adicionar uma LLM, a arquitetura deve permitir isso sem precisar reescrever todo o sistema.
+
+---
+
+# 2. Stack desejada
+
+Priorizar tecnologias gratuitas ou de baixo custo.
+
+Sugestão inicial:
+
+### Frontend
+
+* Next.js
+* React
+* TypeScript
+* Tailwind CSS
+* Recharts ou biblioteca equivalente para gráficos
+* Responsivo para desktop e celular
+* Pode ser hospedado na Vercel
+
+### Backend
+
+Pode ser implementado dentro do próprio Next.js utilizando API Routes / Route Handlers.
+
+Não quero criar um servidor separado inicialmente.
+
+### Banco de dados
+
+Google Sheets.
+
+Utilizar Google Apps Script ou Google Sheets API para leitura e escrita.
+
+A escolha entre Apps Script e Google Sheets API deve considerar:
+
+* simplicidade;
+* custo;
+* facilidade de manutenção;
+* autenticação;
+* limites de uso;
+* segurança mínima necessária.
+
+Se Google Apps Script for suficiente, prefira essa solução.
+
+### Código
+
+* GitHub
+* Git
+* TypeScript
+* `.env` para configurações e credenciais
+* README completo
+
+### Hospedagem
+
+Preferência:
+
+* Vercel para aplicação web/API;
+* Google Sheets para armazenamento;
+* Google Apps Script quando fizer sentido;
+* Telegram Bot API para comunicação.
+
+O objetivo é manter o custo mensal próximo de R$0.
+
+---
+
+# 3. Conceito geral da arquitetura
+
+A arquitetura desejada é aproximadamente:
+
+Telegram
+↓
+Telegram Bot
+↓
+Backend/API
+↓
+Parser de mensagens
+↓
+Google Sheets
+
+E:
+
+Navegador
+↓
+Frontend Next.js
+↓
+Backend/API
+↓
+Google Sheets
+
+O frontend **não deve acessar diretamente credenciais sensíveis do Google Sheets**.
+
+---
+
+# 4. Telegram
+
+Quero criar um bot no Telegram que possa ser utilizado em uma conversa ou grupo.
+
+Exemplo:
+
+Usuário envia:
+
+`padaria 54,90`
+
+O sistema deve interpretar:
+
+* descrição: Padaria
+* valor: R$ 54,90
+* tipo: despesa
+* categoria: Alimentação
+* data: data atual
+* horário: horário atual
+* moeda: BRL
+
+E salvar na aba `despesas`.
+
+Outro exemplo:
+
+`salario valid 10900`
+
+Interpretar como:
+
+* descrição: Salário Valid
+* valor: R$ 10.900,00
+* tipo: entrada
+* categoria: Salário
+* data: data atual
+
+Salvar na aba `entradas`.
+
+Outro exemplo:
+
+`pix joao 200`
+
+Pode ser interpretado como:
+
+* descrição: Pix João
+* valor: R$ 200,00
+* tipo: entrada
+* categoria: Outros / Transferência
+
+O parser deve tentar identificar automaticamente o tipo de lançamento.
+
+---
+
+# 5. Não utilizar LLM inicialmente
+
+A primeira versão NÃO deve depender de OpenAI, Gemini ou outra API paga.
+
+Criar um parser baseado em regras.
+
+O parser deve identificar:
+
+## Valor
+
+Aceitar formatos como:
+
+* `54`
+* `54,90`
+* `54.90`
+* `1.500`
+* `1.500,50`
+* `1500.50`
+* `R$ 54,90`
+
+## Exemplos de mensagens
+
+`padaria 54,90`
+
+`almoço 35`
+
+`uber 27,50`
+
+`mercado 230`
+
+`salario valid 10900`
+
+`freela 800`
+
+`pix recebido do joao 300`
+
+`conta de luz 180`
+
+`farmacia 75`
+
+---
+
+# 6. Identificação de entrada ou despesa
+
+Criar regras para identificar automaticamente se o lançamento é entrada ou despesa.
+
+Palavras indicativas de entrada:
+
+* salário
+* salario
+* pagamento recebido
+* recebido
+* recebimento
+* pix recebido
+* freela
+* freelance
+* comissão
+* comissao
+* venda
+* renda
+* depósito
+* deposito
+* reembolso
+* restituição
+* transferencia recebida
+
+Palavras indicativas de despesa:
+
+* compra
+* pagamento
+* conta
+* gasto
+* despesa
+* mercado
+* padaria
+* restaurante
+* almoço
+* jantar
+* uber
+* gasolina
+* combustível
+* farmacia
+* farmácia
+* aluguel
+* energia
+* internet
+
+Caso o sistema não consiga identificar com segurança:
+
+Perguntar no Telegram:
+
+> Não consegui identificar se isso é uma entrada ou despesa.
+> Responda:
+>
+> 1 - Entrada
+> 2 - Despesa
+
+Não inventar classificação quando não houver confiança suficiente.
+
+---
+
+# 7. Categorias
+
+Criar categorias padrão.
+
+## Despesas
+
+* Alimentação
+* Moradia
+* Transporte
+* Saúde
+* Educação
+* Lazer
+* Compras
+* Assinaturas
+* Contas
+* Impostos
+* Dívidas
+* Investimentos
+* Outros
+
+## Entradas
+
+* Salário
+* Freelance
+* Rendimentos
+* Reembolso
+* Venda
+* Transferência
+* Outros
+
+As categorias devem ficar armazenadas em uma configuração, para que possam ser alteradas posteriormente.
+
+---
+
+# 8. Identificação automática da categoria
+
+Criar um dicionário simples de palavras-chave.
+
+Exemplo:
+
+### Alimentação
+
+* padaria
+* restaurante
+* almoço
+* jantar
+* comida
+* ifood
+* lanche
+* mercado
+* supermercado
+
+### Transporte
+
+* uber
+* 99
+* gasolina
+* combustível
+* estacionamento
+* ônibus
+* onibus
+* metrô
+* metro
+
+### Saúde
+
+* farmácia
+* farmacia
+* médico
+* medico
+* consulta
+* exame
+* dentista
+
+### Moradia
+
+* aluguel
+* condomínio
+* condominio
+* energia
+* água
+* agua
+* luz
+* internet
+
+### Lazer
+
+* cinema
+* jogo
+* games
+* viagem
+* parque
+
+Se houver conflito entre categorias, criar uma regra de prioridade.
+
+---
+
+# 9. Confirmação do lançamento
+
+Depois de interpretar a mensagem, o bot deve responder algo como:
+
+> Lançamento identificado:
+>
+> Tipo: Despesa
+> Descrição: Padaria
+> Valor: R$ 54,90
+> Categoria: Alimentação
+> Data: 30/09/2026
+>
+> Confirmar?
+>
+> ✅ Confirmar
+> ✏️ Editar
+> ❌ Cancelar
+
+Preferencialmente utilizar botões inline do Telegram.
+
+O lançamento só deve ser gravado depois da confirmação.
+
+Opcionalmente, criar uma configuração para permitir "modo rápido", no qual lançamentos simples sejam registrados automaticamente.
+
+---
+
+# 10. Edição pelo Telegram
+
+Preciso conseguir editar lançamentos através do Telegram.
+
+Exemplo:
+
+`editar`
+
+O bot pode mostrar os últimos lançamentos:
+
+> Últimos lançamentos:
+>
+> 1. Padaria — R$ 54,90
+> 2. Uber — R$ 25,00
+> 3. Salário Valid — R$ 10.900,00
+>
+> Selecione o lançamento.
+
+Depois mostrar:
+
+> O que deseja alterar?
+>
+> Descrição
+> Valor
+> Categoria
+> Data
+> Tipo
+
+Também deve ser possível utilizar comandos mais diretos, por exemplo:
+
+`editar 1 valor 59,90`
+
+ou:
+
+`editar 1 categoria lazer`
+
+Criar a abordagem que resultar em melhor experiência sem tornar o sistema excessivamente complexo.
+
+---
+
+# 11. Exclusão pelo Telegram
+
+Permitir excluir lançamentos.
+
+Exemplo:
+
+`excluir`
+
+Mostrar os últimos lançamentos.
+
+Depois da seleção:
+
+> Deseja realmente excluir?
+>
+> Sim
+> Não
+
+A exclusão deve ser registrada em log, se isso não adicionar complexidade excessiva.
+
+---
+
+# 12. Correção de lançamento
+
+Também quero poder enviar algo como:
+
+`corrigir padaria para 49,90`
+
+ou:
+
+`mudar padaria para alimentação`
+
+Caso seja possível implementar de maneira confiável.
+
+Se essa funcionalidade aumentar muito a complexidade, priorizar o fluxo estruturado de edição.
+
+---
+
+# 13. Google Sheets
+
+Criar uma planilha com as seguintes abas:
+
+### despesas
+
+Colunas:
+
+* id
+* data
+* hora
+* descricao
+* valor
+* categoria
+* forma_pagamento
+* observacao
+* origem
+* telegram_user_id
+* created_at
+* updated_at
+
+### entradas
+
+Colunas:
+
+* id
+* data
+* hora
+* descricao
+* valor
+* categoria
+* observacao
+* origem
+* telegram_user_id
+* created_at
+* updated_at
+
+### categorias
+
+Colunas:
+
+* tipo
+* categoria
+* palavras_chave
+* ativa
+
+### configuracoes
+
+Guardar configurações do sistema.
+
+### usuarios
+
+Guardar os usuários autorizados a utilizar a aplicação.
+
+### logs
+
+Registrar operações importantes:
+
+* criação
+* edição
+* exclusão
+* erro
+
+---
+
+# 14. IDs
+
+Cada lançamento deve possuir um ID único.
+
+Não depender do número da linha do Google Sheets como ID.
+
+Gerar IDs como UUID.
+
+Exemplo:
+
+`exp_01K...`
+
+ou UUID padrão.
+
+Isso é importante porque linhas podem ser alteradas.
+
+---
+
+# 15. Datas
+
+Utilizar timezone:
+
+`America/Sao_Paulo`
+
+Todas as datas e horários devem ser tratados considerando o horário de Brasília.
+
+O sistema deve evitar problemas de timezone entre:
+
+* Telegram
+* Vercel
+* Google Apps Script
+* Google Sheets
+* navegador.
+
+---
+
+# 16. Formas de pagamento
+
+O parser deve tentar identificar formas de pagamento:
+
+* Pix
+* cartão de crédito
+* cartão de débito
+* dinheiro
+* transferência
+* boleto
+* outros
+
+Exemplo:
+
+`padaria pix 54,90`
+
+Resultado:
+
+Descrição: Padaria
+Valor: R$ 54,90
+Categoria: Alimentação
+Forma de pagamento: Pix
+
+Se não informado:
+
+`forma_pagamento = não informado`
+
+---
+
+# 17. Datas futuras
+
+Permitir lançamento com data diferente da atual.
+
+Exemplos:
+
+`padaria 54,90 ontem`
+
+`aluguel 1500 dia 5`
+
+`salario 10900 dia 30`
+
+Criar suporte inicial para:
+
+* hoje
+* ontem
+* anteontem
+* amanhã
+* dia X
+* DD/MM
+* DD/MM/YYYY
+
+Se a implementação ficar muito complexa, priorizar hoje/ontem e datas explícitas.
+
+---
+
+# 18. Parcelamento
+
+Idealmente permitir:
+
+`geladeira 3000 10x`
+
+Interpretar:
+
+* valor total: R$ 3.000
+* parcelas: 10
+* valor da parcela: R$ 300
+* categoria: Compras
+
+Porém, não é necessário implementar isso na primeira versão se aumentar muito a complexidade.
+
+Caso seja implementado, criar campos:
+
+* valor_total
+* parcela_atual
+* total_parcelas
+* grupo_parcelamento
+
+---
+
+# 19. Dashboard Web
+
+Criar uma aplicação web responsiva.
+
+Login com:
+
+* usuário
+* senha
+
+Depois do login, mostrar dashboard financeiro.
+
+A página principal deve mostrar:
+
+### Resumo do mês
+
+* Entradas
+* Despesas
+* Saldo
+* Taxa de poupança
+* Total investido, caso aplicável
+* Orçamento disponível
+
+Exemplo:
+
+> Setembro/2026
+>
+> Entradas: R$ 12.000
+> Despesas: R$ 7.200
+> Saldo: R$ 4.800
+> Poupança: 40%
+>
+> Orçamento restante: R$ 1.800
+
+---
+
+# 20. Dashboard visual
+
+Criar gráficos:
+
+### Despesas por categoria
+
+Exemplo:
+
+Alimentação
+Moradia
+Transporte
+Lazer
+Saúde
+etc.
+
+### Evolução mensal
+
+Mostrar:
+
+* entradas
+* despesas
+* saldo
+
+nos últimos meses.
+
+### Despesas ao longo dos dias
+
+Mostrar evolução dos gastos durante o mês.
+
+### Distribuição das despesas
+
+Mostrar quais categorias estão consumindo mais dinheiro.
+
+---
+
+# 21. Filtros
+
+Permitir filtrar por:
+
+* mês
+* ano
+* categoria
+* tipo
+* forma de pagamento
+
+---
+
+# 22. Tela de lançamentos
+
+Criar uma tabela com:
+
+* data
+* descrição
+* categoria
+* tipo
+* valor
+* forma de pagamento
+* ações
+
+Ações:
+
+* editar
+* excluir
+
+Também permitir criar lançamento manualmente pelo site.
+
+---
+
+# 23. Orçamento
+
+Quero que o sistema tenha um mecanismo de orientação financeira.
+
+Não quero simplesmente copiar o método 50/30/20 sem considerar minha situação.
+
+Criar uma estrutura que permita trabalhar com diferentes métodos.
+
+Inicialmente implementar:
+
+## Método 50/30/20
+
+50%:
+
+Necessidades
+
+30%:
+
+Desejos
+
+20%:
+
+Poupança / investimentos / objetivos financeiros
+
+Porém, o sistema deve permitir personalizar os percentuais.
+
+Exemplo:
+
+Necessidades: 60%
+Desejos: 20%
+Objetivos: 20%
+
+---
+
+# 24. Classificação financeira das categorias
+
+Criar uma configuração que associe cada categoria a:
+
+* necessidade
+* desejo
+* objetivo financeiro
+
+Exemplo:
+
+Moradia → necessidade
+Alimentação → necessidade
+Transporte → necessidade
+Saúde → necessidade
+Lazer → desejo
+Compras → desejo
+Investimentos → objetivo
+Poupança → objetivo
+
+Essa classificação deve ser configurável.
+
+---
+
+# 25. Sugestões financeiras
+
+O dashboard deve apresentar sugestões calculadas a partir dos dados reais.
+
+Exemplo:
+
+> Você recebeu R$ 10.900 este mês.
+
+> Até agora você gastou R$ 6.200.
+
+> Seu limite planejado para necessidades era R$ 5.450.
+
+> Você está R$ 750 acima do limite planejado para necessidades.
+
+Ou:
+
+> Considerando sua renda e os gastos registrados, você ainda poderia gastar aproximadamente R$ 1.200 neste mês mantendo o orçamento planejado.
+
+Importante:
+
+Essas recomendações devem ser apresentadas como **orientações baseadas no método escolhido**, não como aconselhamento financeiro profissional.
+
+---
+
+# 26. Melhorar o cálculo de "quanto ainda posso gastar"
+
+Não quero simplesmente dividir a renda por 50/30/20.
+
+Criar uma lógica mais útil.
+
+Considerar:
+
+* renda mensal;
+* despesas fixas já registradas;
+* despesas variáveis;
+* orçamento da categoria;
+* quanto já foi gasto;
+* dias restantes no mês;
+* compromissos futuros já cadastrados;
+* metas de poupança;
+* percentual definido pelo usuário.
+
+Exemplo:
+
+Renda:
+
+R$ 10.900
+
+Necessidades planejadas:
+
+R$ 5.450
+
+Despesas necessárias já realizadas:
+
+R$ 4.000
+
+Restante:
+
+R$ 1.450
+
+Se faltam 10 dias para o fim do mês:
+
+Limite médio diário:
+
+R$ 145/dia
+
+Mostrar isso no dashboard.
+
+---
+
+# 27. Despesas fixas
+
+Criar futuramente uma funcionalidade para cadastrar despesas recorrentes.
+
+Exemplos:
+
+* financiamento
+* aluguel
+* internet
+* Netflix
+* academia
+* energia
+* escola
+* plano de saúde
+
+Campos:
+
+* descrição
+* valor
+* categoria
+* dia de vencimento
+* recorrência
+* ativa/inativa
+
+Essas despesas podem gerar previsões no orçamento.
+
+---
+
+# 28. Metas financeiras
+
+Criar possibilidade futura de cadastrar metas.
+
+Exemplo:
+
+Meta:
+
+`Reserva de emergência`
+
+Valor desejado:
+
+`R$ 30.000`
+
+Valor atual:
+
+`R$ 8.000`
+
+Prazo:
+
+`24 meses`
+
+O sistema pode calcular:
+
+`quanto preciso guardar por mês`
+
+Outra meta poderia ser:
+
+`Viagem`
+
+`Comprar carro`
+
+`Entrada de imóvel`
+
+etc.
+
+---
+
+# 29. Login
+
+Criar autenticação simples.
+
+Como é um projeto pessoal, inicialmente pode existir apenas um usuário administrador.
+
+Não precisa criar sistema complexo de RBAC.
+
+Porém:
+
+* senha não pode ficar armazenada em texto puro;
+* credenciais não devem ficar hardcoded no código;
+* secrets devem ficar em variáveis de ambiente;
+* sessões devem ser minimamente protegidas.
+
+A aplicação pode ser inicialmente single-user.
+
+Se for mais simples, utilizar uma solução de autenticação compatível com Next.js.
+
+---
+
+# 30. Telegram em grupo
+
+O bot poderá ser adicionado a um grupo privado.
+
+O sistema deve considerar que mensagens do grupo podem ser recebidas.
+
+Identificar o usuário pelo:
+
+`telegram_user_id`
+
+Inicialmente permitir uma lista de usuários autorizados.
+
+Exemplo:
+
+`AUTHORIZED_TELEGRAM_USERS`
+
+Se o usuário não estiver autorizado:
+
+> Você não possui autorização para utilizar este bot.
+
+Não processar o lançamento.
+
+---
+
+# 31. Comandos do Telegram
+
+Criar comandos:
+
+`/start`
+
+`/ajuda`
+
+`/ultimos`
+
+`/editar`
+
+`/excluir`
+
+`/saldo`
+
+`/mes`
+
+`/categorias`
+
+`/config`
+
+Além disso, aceitar mensagens naturais simples:
+
+`padaria 54,90`
+
+`salario valid 10900`
+
+---
+
+# 32. Consulta pelo Telegram
+
+Permitir perguntas simples sem LLM.
+
+Exemplos:
+
+`quanto gastei esse mês`
+
+`quanto gastei com alimentação`
+
+`quanto tenho de saldo`
+
+`quanto gastei hoje`
+
+`quanto gastei com uber`
+
+`quais foram minhas maiores despesas`
+
+O sistema deve transformar essas frases em consultas estruturadas.
+
+Exemplo:
+
+`quanto gastei com alimentação esse mês`
+
+→ buscar despesas da categoria Alimentação no mês atual.
+
+---
+
+# 33. Não usar IA onde regras resolvem
+
+Priorizar:
+
+* regex;
+* palavras-chave;
+* tabelas de categorias;
+* parser determinístico;
+* consultas ao Google Sheets.
+
+Não utilizar LLM para:
+
+* somar valores;
+* classificar informações simples;
+* descobrir datas;
+* consultar dados;
+* gerar gráficos.
+
+Isso reduzirá custos e deixará o sistema mais previsível.
+
+---
+
+# 34. Possível LLM no futuro
+
+Deixar o projeto preparado para futuramente adicionar uma camada opcional:
+
+Mensagem Telegram
+↓
+Parser determinístico
+↓
+Se confiança alta → processa
+↓
+Se confiança baixa → opcionalmente LLM
+↓
+Confirmação
+↓
+Google Sheets
+
+A integração com LLM deve ser desacoplada através de uma interface.
+
+Não implementar pagamento de API na primeira versão.
+
+---
+
+# 35. Segurança
+
+Este é um projeto pessoal e não precisa de segurança empresarial.
+
+Porém, não quero práticas obviamente ruins.
+
+Manter pelo menos:
+
+* senha com hash;
+* secrets em `.env`;
+* não expor credenciais do Google no frontend;
+* validar dados recebidos;
+* validar valores;
+* validar Telegram user ID;
+* limitar acesso ao bot;
+* não colocar tokens no GitHub;
+* `.gitignore` adequado.
+
+Não criar:
+
+* Kubernetes;
+* microsserviços;
+* infraestrutura AWS complexa;
+* banco SQL pago;
+* Redis;
+* filas;
+* arquitetura enterprise;
+* observabilidade complexa.
+
+Priorizar simplicidade.
+
+---
+
+# 36. Tratamento de erros
+
+Se o Google Sheets estiver indisponível:
+
+O bot deve informar:
+
+> Não consegui salvar seu lançamento agora. Tente novamente em alguns instantes.
+
+Não informar detalhes técnicos ao usuário.
+
+No backend, registrar o erro.
+
+---
+
+# 37. Idempotência
+
+Esse ponto é importante.
+
+O Telegram pode reenviar uma mensagem ou o webhook pode ser processado duas vezes.
+
+Evitar que o mesmo lançamento seja salvo duas vezes.
+
+Criar algum mecanismo utilizando:
+
+* Telegram update_id;
+* message_id;
+* ou uma chave idempotente.
+
+---
+
+# 38. Google Sheets como banco
+
+Como é um projeto pessoal, Google Sheets será o armazenamento principal.
+
+Porém, criar uma camada de abstração:
+
+`FinanceRepository`
+
+Com métodos como:
+
+```text
+createExpense()
+createIncome()
+updateTransaction()
+deleteTransaction()
+getTransactions()
+getMonthlySummary()
+getCategorySummary()
+```
+
+Assim, no futuro, se eu quiser migrar do Google Sheets para PostgreSQL/Supabase, não preciso reescrever toda a aplicação.
+
+---
+
+# 39. API
+
+Criar endpoints internos organizados.
+
+Exemplo:
+
+```text
+POST /api/telegram/webhook
+
+GET /api/dashboard/summary
+
+GET /api/transactions
+
+POST /api/transactions
+
+PUT /api/transactions/:id
+
+DELETE /api/transactions/:id
+
+GET /api/categories
+
+GET /api/budget
+```
+
+Os endpoints podem ser adaptados à arquitetura escolhida.
+
+---
+
+# 40. Variáveis de ambiente
+
+Criar `.env.example`.
+
+Exemplo:
+
+```env
+TELEGRAM_BOT_TOKEN=
+TELEGRAM_WEBHOOK_SECRET=
+
+GOOGLE_SHEET_ID=
+GOOGLE_SERVICE_ACCOUNT_EMAIL=
+GOOGLE_PRIVATE_KEY=
+
+AUTH_SECRET=
+
+AUTHORIZED_TELEGRAM_USERS=
+```
+
+Nunca colocar valores reais no GitHub.
+
+---
+
+# 41. Interface
+
+Quero uma interface simples e moderna.
+
+Não precisa parecer uma aplicação bancária sofisticada.
+
+Priorizar:
+
+* boa leitura;
+* poucos elementos;
+* cards;
+* gráficos;
+* tabela;
+* filtros;
+* responsividade;
+* modo escuro opcional.
+
+Dashboard principal:
+
+```text
+----------------------------------------
+        CONTROLE FINANCEIRO
+        Setembro/2026
+----------------------------------------
+
+Entradas
+R$ 10.900
+
+Despesas
+R$ 6.240
+
+Saldo
+R$ 4.660
+
+Poupança
+42,8%
+
+----------------------------------------
+
+Orçamento do mês
+
+Necessidades
+R$ 4.000 / R$ 5.450
+
+Desejos
+R$ 1.240 / R$ 3.270
+
+Objetivos
+R$ 1.000 / R$ 2.180
+
+----------------------------------------
+
+Quanto ainda posso gastar?
+
+R$ 2.030
+
+Limite médio diário:
+R$ 67,67
+
+----------------------------------------
+
+Despesas por categoria
+
+[GRÁFICO]
+
+----------------------------------------
+
+Evolução mensal
+
+[GRÁFICO]
+
+----------------------------------------
+```
+
+Os valores acima são apenas exemplos visuais e não devem ser utilizados como dados reais.
+
+---
+
+# 42. Experiência no Telegram
+
+O fluxo principal deve ser extremamente rápido.
+
+Usuário:
+
+`padaria 54,90`
+
+Bot:
+
+> Despesa identificada
+>
+> Padaria
+> R$ 54,90
+> Alimentação
+> Hoje
+>
+> [Confirmar] [Editar] [Cancelar]
+
+Usuário clica em confirmar.
+
+Bot:
+
+> Registrado.
+>
+> Despesa: R$ 54,90
+> Categoria: Alimentação
+>
+> Total gasto hoje: R$ 87,40
+> Total gasto no mês: R$ 1.824,20
+
+Esse tipo de feedback é desejável.
+
+---
+
+# 43. Regras para valores
+
+O sistema deve tratar corretamente:
+
+`54,90`
+
+como:
+
+`54.90`
+
+E:
+
+`1.500,90`
+
+como:
+
+`1500.90`
+
+Não interpretar erroneamente:
+
+`1.500`
+
+como R$ 1,50.
+
+Criar testes automatizados para os casos de valores brasileiros.
+
+---
+
+# 44. Testes
+
+Criar testes principalmente para o parser.
+
+Testar:
+
+```text
+padaria 54,90
+mercado 150
+uber 27,50
+salario valid 10900
+salário 10.900
+pix recebido joao 300
+almoço 35 ontem
+```
+
+Testar também mensagens inválidas:
+
+```text
+padaria
+54,90
+oi
+quanto gastei
+```
+
+O sistema não deve criar lançamento quando não conseguir identificar valor + descrição de maneira confiável.
+
+---
+
+# 45. MVP
+
+Antes de implementar tudo, criar primeiro um MVP funcional.
+
+### MVP obrigatório
+
+1. Criar Telegram Bot.
+2. Receber mensagem.
+3. Identificar descrição.
+4. Identificar valor.
+5. Identificar entrada/despesa.
+6. Identificar categoria.
+7. Confirmar no Telegram.
+8. Salvar no Google Sheets.
+9. Consultar últimos lançamentos.
+10. Editar lançamento.
+11. Excluir lançamento.
+12. Criar dashboard web.
+13. Login.
+14. Resumo mensal.
+15. Gráfico de despesas por categoria.
+16. Cálculo de orçamento.
+17. Deploy na Vercel.
+
+Somente depois implementar:
+
+* parcelamento;
+* despesas recorrentes;
+* metas;
+* consultas mais avançadas;
+* LLM;
+* funcionalidades adicionais.
+
+---
+
+# 46. Ordem de desenvolvimento
+
+Não tente gerar tudo de uma vez.
+
+Desenvolver em etapas:
+
+### Fase 1
+
+Criar estrutura Next.js + TypeScript.
+
+### Fase 2
+
+Criar integração Google Sheets.
+
+### Fase 3
+
+Criar Telegram Bot + webhook.
+
+### Fase 4
+
+Criar parser determinístico.
+
+### Fase 5
+
+Criar confirmação de lançamentos.
+
+### Fase 6
+
+Criar edição/exclusão.
+
+### Fase 7
+
+Criar autenticação.
+
+### Fase 8
+
+Criar dashboard.
+
+### Fase 9
+
+Criar orçamento 50/30/20 configurável.
+
+### Fase 10
+
+Criar testes.
+
+### Fase 11
+
+Deploy Vercel.
+
+### Fase 12
+
+Documentação.
+
+---
+
+# 47. O que quero da IA durante o desenvolvimento
+
+Não quero apenas que você gere código sem explicar a arquitetura.
+
+Antes de gerar grandes quantidades de código:
+
+1. apresentar a arquitetura;
+2. explicar as decisões técnicas;
+3. apontar problemas ou limitações;
+4. propor a estrutura de pastas;
+5. definir o modelo do Google Sheets;
+6. depois implementar por etapas.
+
+Quando gerar código:
+
+* entregar arquivos completos quando necessário;
+* informar exatamente onde cada arquivo deve ficar;
+* não omitir imports;
+* não utilizar código fictício;
+* não utilizar APIs inexistentes;
+* não deixar funções críticas como `TODO`;
+* garantir que o código compile;
+* explicar como executar localmente;
+* explicar como configurar o Telegram;
+* explicar como configurar o Google Sheets;
+* explicar como configurar a Vercel;
+* explicar as variáveis de ambiente.
+
+---
+
+# 48. Estrutura inicial esperada
+
+Uma estrutura semelhante a:
+
+```text
+finance-app/
+│
+├── app/
+│   ├── dashboard/
+│   ├── login/
+│   ├── transactions/
+│   └── api/
+│       ├── telegram/
+│       ├── transactions/
+│       ├── dashboard/
+│       └── categories/
+│
+├── components/
+│   ├── dashboard/
+│   ├── charts/
+│   ├── transactions/
+│   └── ui/
+│
+├── lib/
+│   ├── telegram/
+│   ├── google-sheets/
+│   ├── parser/
+│   ├── finance/
+│   ├── auth/
+│   └── utils/
+│
+├── tests/
+│
+├── types/
+│
+├── public/
+│
+├── .env.example
+├── .gitignore
+├── package.json
+├── tsconfig.json
+└── README.md
+```
+
+A estrutura pode ser modificada se houver uma solução tecnicamente melhor.
+
+---
+
+# 49. Critérios de sucesso
+
+Considerarei o MVP concluído quando conseguir fazer:
+
+### Pelo Telegram
+
+Enviar:
+
+`padaria 54,90`
+
+Receber:
+
+> Despesa
+> Padaria
+> R$ 54,90
+> Alimentação
+>
+> Confirmar?
+
+Clicar em confirmar.
+
+E encontrar o lançamento na aba `despesas` do Google Sheets.
+
+Depois acessar o site e visualizar:
+
+* lançamento;
+* total do mês;
+* total de entradas;
+* total de despesas;
+* saldo;
+* despesas por categoria;
+* orçamento disponível.
+
+Também devo conseguir editar e excluir o lançamento.
+
+---
+
+# 50. Prioridade
+
+Priorize nesta ordem:
+
+1. simplicidade;
+2. baixo custo;
+3. funcionamento;
+4. facilidade de manutenção;
+5. boa experiência;
+6. segurança básica;
+7. escalabilidade futura.
+
+Não quero transformar um projeto pessoal em uma arquitetura complexa.
+
+Antes de começar a implementação, analise este projeto criticamente e proponha alterações que reduzam custo, complexidade ou pontos de falha.
+
+Depois disso, apresente a arquitetura final recomendada e comece a implementação pela Fase 1.
