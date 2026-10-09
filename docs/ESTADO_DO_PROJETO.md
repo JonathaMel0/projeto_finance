@@ -22,11 +22,11 @@ sem LLM (parser por regras).
 | 3 | Bot Telegram + webhook | feita (webhook ainda **não registrado**) |
 | 4 | Parser determinístico | feita |
 | 5 | Confirmação por botões + gravação + idempotência | feita (testada só com Sheets falso e no ciclo real do repositório; **falta teste no Telegram**) |
-| 6 | Edição e exclusão (`/editar`, `/excluir`, `/ultimos`, botão Editar, log na aba `logs`) | feita no código (138 testes); **falta testar no Telegram** |
-| 7 | Autenticação do site (login, senha com hash, `AUTH_SECRET`) | pendente |
+| 6 | Edição e exclusão (`/editar`, `/excluir`, `/ultimos`, botão Editar, log na aba `logs`) | feita e testada no Telegram |
+| 7 | Autenticação do site (login, senha com hash, `AUTH_SECRET`) | feita (ver `docs/autenticacao.md`); **falta configurar as variáveis na Vercel e testar** |
 | 8 | Dashboard (resumo, gráficos, filtros, tabela de lançamentos) | pendente |
 | 9 | Orçamento 50/30/20 configurável + "quanto ainda posso gastar" | pendente |
-| 10 | Testes | parcial (138 testes passando; faltam os das fases 7+) |
+| 10 | Testes | parcial (157 testes passando; faltam os das fases 8+) |
 | 11 | Deploy na Vercel | **em andamento (próximo passo imediato)** |
 | 12 | Documentação | parcial |
 
@@ -77,7 +77,7 @@ No novo PC é preciso recriar:
      no grupo, vê-se o ID no log ou com @userinfobot / `/user` do GetIDsBot).
    - `GOOGLE_SHEETS_SPREADSHEET_ID`, `GOOGLE_SERVICE_ACCOUNT_EMAIL`,
      `GOOGLE_PRIVATE_KEY` – do projeto **melo-finance** no Google Cloud.
-   - `AUTH_SECRET` – gerar na Fase 7.
+   - `AUTH_SECRET`, `ADMIN_USERNAME`, `ADMIN_PASSWORD_HASH` – login do site (Fase 7); gere com `node scripts/gerar-credenciais.mjs` (veja `docs/autenticacao.md`).
 3. **Chave da service account (JSON):** o arquivo `melo-finance.json` ficou só
    no PC antigo (está no `.gitignore`). Baixe uma chave nova em Google Cloud →
    IAM → Contas de serviço → Chaves, e a planilha precisa continuar
@@ -107,7 +107,7 @@ Planilha com 7 abas e cabeçalhos exatos descritos em `docs/google-sheets.md`
    `despesas`; testar `pix joao 200`, `almoço 35 ontem`, clique duplo.
 4. **Autorizar a esposa** (adicionar o ID em `AUTHORIZED_TELEGRAM_USERS` na
    Vercel e redeploy).
-5. Testar a Fase 6 no Telegram (editar/excluir/botão Editar), depois Fases 7, 8, 9 e fechar testes/documentação.
+5. Configurar login na Vercel (`AUTH_SECRET`, `ADMIN_USERNAME`, `ADMIN_PASSWORD_HASH`), depois Fases 8, 9 e fechar testes/documentação.
 
 ## Limitações conhecidas
 
